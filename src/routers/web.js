@@ -10,6 +10,10 @@ const CustomerAuthController = require("../apps/controllers/apis/customerAuth");
 
 // Import Middleware
 const { registerValidator } = require("../apps/middlewares/customerValidator");
+const { verifyCustomer} = require("../apps/middlewares/orderAuth");
+const { createOrderRules, createOrderValidator } = require("../apps/middlewares/orderValidator");
+
+
 const {
   authRules,
   loginValidator,
@@ -48,6 +52,16 @@ router.get("/products", ProductController.findAll);
 router.get("/products/:id/comments", CommentController.findByProductId);
 router.post("/products/:id/comments", CommentController.create);
 router.get("/products/:id", ProductController.findOne);
-router.get("/orders", OrderController.index);
+
+
+router.post("/customers/orders",
+  verifyCustomer,
+  createOrderRules,
+  createOrderValidator,
+  createOrderValidator,
+  OrderController.order);
+router.get("/customers/orders", OrderController.findByCustomerID);
+router.get("/customers/orders/:id", OrderController.findOne);
+router.patch("/customers/orders/:id/cancel", OrderController.cancel);
 
 module.exports = router;
