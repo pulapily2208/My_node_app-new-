@@ -1,5 +1,8 @@
 const OrderModel = require("../../models/order");
 const ProductModel = require("../../models/product");
+const sendMail = require("../../../emails/mail");
+const config = require("config");
+const { Template } = require("ejs");
 
 exports.order = async (req, res) => {
   try {
@@ -9,19 +12,21 @@ exports.order = async (req, res) => {
       // Customer login
       customerInfo = {
         customer_id: req.customer._id,
+        fullName: req.customer.fullName,
         email: req.customer.email,
         phone: req.customer.phone,
         address: req.customer.address
       };
     } else {
       // Guest
-      const { email, phone, address } = req.body;
-      customerInfo = { email, phone, address };
+      const { fullName, email, phone, address } = req.body;
+      customerInfo = { fullName, email, phone, address };
     }
 
     // Create new items
     let totalPrice = 0;
     let orderItems = [];
+    let orderMail = [];
     const { items } = req.body;
 
     for (let item of items) {
@@ -40,6 +45,11 @@ exports.order = async (req, res) => {
         qty: item.qty,
         price: itemPrice,
       });
+      orderMail.push({
+        name: product.name,
+        qty: item.qty,
+        price: itemPrice,
+      });
     }
 
     // Create order
@@ -48,6 +58,18 @@ exports.order = async (req, res) => {
       totalPrice,
       items: orderItems,
     });
+
+    // Send mail
+    await sendMail(`${config.get("mail.mailTemplate")}/mail-order.ejs`,
+      {
+        ...customerInfo,
+        totalPrice,
+        items: orderMail,
+        subject: "Xác nhận đơn hàng từ Vietpro Shop ✔",
+      }
+    );
+    
+
 
     // Response
     return res.status(201).json({
